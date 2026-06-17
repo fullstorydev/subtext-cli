@@ -1,13 +1,12 @@
 {
   "name": "@subtextdev/subtext-cli",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Subtext CLI — drive the Subtext MCP server from your terminal",
   "license": "MIT",
   "homepage": "https://subtext.fullstory.com",
   "repository": {
     "type": "git",
-    "url": "https://github.com/fullstorydev/subtext.git",
-    "directory": "cli/npm"
+    "url": "https://github.com/fullstorydev/subtext-cli.git"
   },
   "engines": {
     "node": ">=18"
