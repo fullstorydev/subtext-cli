@@ -25,7 +25,7 @@ const goArch = archMap[process.arch];
 if (!goPlatform || !goArch) {
   console.error(
     `subtext: unsupported platform ${process.platform}/${process.arch}. ` +
-      "Install manually: https://github.com/fullstorydev/subtext/releases"
+      "Install manually: https://github.com/fullstorydev/subtext-cli/releases"
   );
   process.exit(1);
 }
@@ -33,8 +33,8 @@ if (!goPlatform || !goArch) {
 const isWindows = process.platform === "win32";
 const ext = isWindows ? ".zip" : ".tar.gz";
 const archiveName = `subtext_${goPlatform}_${goArch}${ext}`;
-const releaseTag = `cli/v${version}`;
-const downloadURL = `https://github.com/fullstorydev/subtext/releases/download/${releaseTag}/${archiveName}`;
+const releaseTag = `v${version}`;
+const downloadURL = `https://github.com/fullstorydev/subtext-cli/releases/download/${releaseTag}/${archiveName}`;
 
 const vendorDir = path.join(__dirname, "vendor");
 const binaryName = isWindows ? "subtext.exe" : "subtext";
