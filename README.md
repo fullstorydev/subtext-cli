@@ -193,7 +193,7 @@ When `subtext live signal` returns `operator=human`, the session has been handed
 | `comment` | passthrough | Add, list, reply to, and resolve session replay comments |
 | `doc` | passthrough | Create and manage proof documents |
 | `artifact` | passthrough | Upload and retrieve file artifacts |
-| `privacy` | passthrough | Detect PII and manage element-block privacy rules |
+| `privacy` | passthrough | Detect PII and manage element-block, URL, and network privacy rules |
 | `review` | passthrough | Deep-review a recorded session (map, zoom into signals, snapshot the screen) |
 | `tunnel` | native | Manage reverse tunnels for localhost access |
 | `sightmap` | native | Upload `.sightmap/` component definitions |
@@ -299,9 +299,23 @@ subtext privacy list                                         # list all editable
 subtext privacy list --scope_filter preview                  # preview-scoped rules only
 subtext privacy promote --rule_ids '["<id>"]'                # promote to all sessions
 subtext privacy delete --rule_ids '["<id>"]'                 # delete a preview-scoped rule
+
+subtext privacy url-list                                                            # list URL privacy rules
+subtext privacy url-create --name scrub-ssn --match_host 'example\.com' \
+  --exclude_query_params '["ssn"]'                                                  # create a URL rule
+subtext privacy url-create --guid <guid> --name scrub-ssn --match_host 'example\.com' \
+  --exclude_query_params '["ssn","token"]'                                          # update in place
+
+subtext privacy network-list                                                        # list network privacy rules
+subtext privacy network-create --url_regex '/api/checkout/.*' \
+  --request_body whitelist --request_allowlist_fields '["order_id","status"]'      # create a network rule
+subtext privacy network-create --url_regex '/api/checkout/.*' --overwrite \
+  --request_body whitelist --request_allowlist_fields '["order_id","status","total"]'  # update in place
 ```
 
 Rules are always created in `PREVIEW_SESSIONS_ONLY` scope and must be explicitly promoted. `propose` is a dry-run and persists nothing. Only `mask` and `exclude` block types are supported — unmask rules cannot be created or deleted here.
+
+`url-create` and `network-create` have no preview/promote step — they take effect for all sessions immediately, and neither has a `delete` yet. Both also double as update: pass `--guid` (URL rules) or `--overwrite` (network rules) to replace an existing rule in place instead of creating a new one — either way it's a full replace, not a partial merge, so pass the complete desired state. Only `elide` (default) and `whitelist` body modes are supported for `network-create`; `record` is rejected.
 
 ### `review`
 
