@@ -309,14 +309,14 @@ Rules are always created in `PREVIEW_SESSIONS_ONLY` scope and must be explicitly
 subtext review list-sessions --limit 10                                     # find reviewable sessions
 subtext review open --trace_id <id>                                         # open by trace ID
 subtext review open --session_url <url>                                     # open by session URL — returns a client_id + the map
-subtext review summary --session_url <url>                                  # stateless map + default zoom, no handle needed
+subtext review summary --session_url <url>                                  # stateless default zoom, no handle needed
 subtext review zoom --client_id <id> --resolution '{"error":"standard"}'     # zoom into a signal slice
 subtext review zoom --client_id <id> --resolution '{"network":"machine","console":"machine"}'  # devtool-level detail
 subtext review snapshot --client_id <id> --timestamp <ts>                   # screenshot + component tree + boxes at a moment
 subtext review close --client_id <id> --use_case bug_diagnosis --was_helpful true
 ```
 
-`open` accepts `trace_id`, `session_url`, `device_id`+`session_id`, `email_address`, or `user_uid`. `open` and `summary` return a **map** — signal counts by kind/tag and page flow — so read that before deciding what to zoom into. `zoom`'s `resolution` is a `{scope|kind|tag: grain}` map (`digest`/`standard`/`machine`/`detail`, finest-wins); omit it for everything at `standard`. Always call `close` when done — it releases server resources and records feedback.
+`open` accepts `trace_id`, `session_url`, `device_id`+`session_id`, `email_address`, or `user_uid`. `open` returns a **map** — signal counts by kind/tag and page flow — so read that before deciding what to zoom into. `zoom`'s `resolution` is a `{scope|kind|tag: grain}` map (`digest`/`standard`/`machine`/`detail`, finest-wins); omit it for everything at `standard`. Always call `close` when done — it releases server resources and records feedback.
 
 Primary use cases: verify another agent's proof work (chapter markers as the spine), diagnose a bug from a captured session, produce a structured summary of what happened. Sessions are read-only — use `subtext live` to drive a running app instead.
 
