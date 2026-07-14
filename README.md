@@ -194,7 +194,7 @@ When `subtext live signal` returns `operator=human`, the session has been handed
 | `doc` | passthrough | Create and manage proof documents |
 | `artifact` | passthrough | Upload and retrieve file artifacts |
 | `privacy` | passthrough | Detect PII and manage element-block privacy rules |
-| `review` | passthrough | Deep-review a recorded session (screenshots, diffs, component trees) |
+| `review` | passthrough | Deep-review a recorded session (map, zoom into signals, snapshot the screen) |
 | `tunnel` | native | Manage reverse tunnels for localhost access |
 | `sightmap` | native | Upload `.sightmap/` component definitions |
 | `auth` | native | Verify authentication (`whoami`) |
@@ -306,15 +306,17 @@ Rules are always created in `PREVIEW_SESSIONS_ONLY` scope and must be explicitly
 ### `review`
 
 ```bash
-subtext review open --trace_id <id>                  # open by trace ID
-subtext review open --session_url <url>              # open by session URL
-subtext review view --client_id <id> --page_id <p> --timestamp <ts>      # screenshot + component tree
-subtext review inspect --client_id <id> --page_id <p> --timestamp <ts>   # detailed component tree with selectors
-subtext review diff --client_id <id> --page_id <p> --from_ts <ts> --to_ts <ts>  # diff two moments
+subtext review list-sessions --limit 10                                     # find reviewable sessions
+subtext review open --trace_id <id>                                         # open by trace ID
+subtext review open --session_url <url>                                     # open by session URL — returns a client_id + the map
+subtext review summary --session_url <url>                                  # stateless default zoom, no handle needed
+subtext review zoom --client_id <id> --resolution '{"error":"standard"}'     # zoom into a signal slice
+subtext review zoom --client_id <id> --resolution '{"network":"machine","console":"machine"}'  # devtool-level detail
+subtext review snapshot --client_id <id> --timestamp <ts>                   # screenshot + component tree + boxes at a moment
 subtext review close --client_id <id> --use_case bug_diagnosis --was_helpful true
 ```
 
-`open` accepts `trace_id`, `session_url`, `device_id`+`session_id`, `email_address`, or `user_uid`. Always call `close` when done — it releases server resources and records feedback.
+`open` accepts `session_url` (the most common), `trace_id`, `trace_url`, `device_id`+`session_id`, `email_address`, or `user_uid`. `open` returns a **map** and a digest rollup — the map is signal counts by kind/tag and page flow — so read that before deciding what to zoom into. `zoom`'s `resolution` is a `{scope|kind|tag: grain}` map (`digest`/`standard`/`machine`/`detail`, finest-wins); omit it for everything at `standard`. Always call `close` when done — it releases server resources and records feedback.
 
 Primary use cases: verify another agent's proof work (chapter markers as the spine), diagnose a bug from a captured session, produce a structured summary of what happened. Sessions are read-only — use `subtext live` to drive a running app instead.
 
