@@ -316,7 +316,7 @@ subtext review snapshot --client_id <id> --timestamp <ts>                   # sc
 subtext review close --client_id <id> --use_case bug_diagnosis --was_helpful true
 ```
 
-`open` accepts `trace_id`, `session_url`, `device_id`+`session_id`, `email_address`, or `user_uid`. `open` and `summary` return a **map** — signal counts by kind/tag, page flow, and a density strip — so read that before deciding what to zoom into. `zoom`'s `resolution` is a `{scope|kind|tag: grain}` map (`digest`/`standard`/`machine`/`detail`, finest-wins); omit it for everything at `standard`. Always call `close` when done — it releases server resources and records feedback.
+`open` accepts `trace_id`, `session_url`, `device_id`+`session_id`, `email_address`, or `user_uid`. `open` and `summary` return a **map** — signal counts by kind/tag and page flow — so read that before deciding what to zoom into. `zoom`'s `resolution` is a `{scope|kind|tag: grain}` map (`digest`/`standard`/`machine`/`detail`, finest-wins); omit it for everything at `standard`. Always call `close` when done — it releases server resources and records feedback.
 
 Primary use cases: verify another agent's proof work (chapter markers as the spine), diagnose a bug from a captured session, produce a structured summary of what happened. Sessions are read-only — use `subtext live` to drive a running app instead.
 

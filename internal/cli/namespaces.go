@@ -68,7 +68,7 @@ var reviewCmd = &cobra.Command{
 	Short: "Deep-review a recorded Fullstory session",
 	Long: `Open a completed Fullstory session for deep agent review: read the map, zoom into the signal stream, and snapshot the screen to understand what happened.
 
-open and summary return a map — signal counts by kind/tag, page flow, and a density strip with error markers — so read that before deciding what to zoom into. zoom takes a resolution map ({scope|kind|tag: grain}, grains digest/standard/machine/detail, finest-wins) to progressively disclose just the signals a hypothesis needs.
+open and summary return a map — signal counts by kind/tag and page flow — so read that before deciding what to zoom into. zoom takes a resolution map ({scope|kind|tag: grain}, grains digest/standard/machine/detail, finest-wins) to progressively disclose just the signals a hypothesis needs.
 
 Primary use cases:
   - Verify another agent's proof work (BEFORE/AFTER chapter markers as the spine)
