@@ -1,54 +1,52 @@
 # Releasing the Subtext CLI
 
+Releases are automated via [changesets](https://github.com/changesets/changesets).
+There is no manual version bump and no manual `git tag`.
+
 ## Prerequisites
 
 - Write access to this repo (`fullstorydev/subtext-cli`).
-- (First release only) `@subtextdev` npm scope access and a Trusted Publisher configured on npmjs.com (see below).
+- (First release only) `@subtextdev` npm scope access and a Trusted Publisher
+  configured on npmjs.com (see below). Publishing uses OIDC provenance; no
+  `NPM_TOKEN` secret.
 
 ## Release process
 
-### 1. Decide on the version
+### 1. Add a changeset with your PR
 
-We use standard `vX.Y.Z` tags. The CLI version lives only in the git tag — there is no version file to update.
+If your change is user-facing (should bump the version / appear in the
+changelog), run:
 
-### 2. Update the npm wrapper version
-
-The npm package version must be bumped manually before tagging so that `npm publish` picks up the right version and `install.js` points at the correct release download URL. The release workflow will fail the validation step if the tag and `package.json` version disagree.
-
-```bash
-# In npm/package.json, bump "version" to match your tag (without the "v" prefix)
-# e.g. if you're tagging v0.2.0, set "version": "0.2.0"
+```sh
+npm run changeset
 ```
 
-Commit:
+Pick `patch` / `minor` / `major`, write a short summary, and commit the
+resulting `.changeset/*.md` file with your PR. See
+[`.changeset/README.md`](.changeset/README.md) for the full workflow.
 
-```bash
-git add npm/package.json
-git commit -m "bump npm version to 0.2.0"
-git push
-```
+### 2. Merge to main
 
-### 3. Tag and push
+The `release` workflow (`.github/workflows/release.yml`) notices pending
+changesets and opens/updates a **"Version Packages" PR** that bumps
+`npm/package.json` and writes `npm/CHANGELOG.md`.
 
-```bash
-git tag v0.2.0
-git push origin v0.2.0
-```
+### 3. Merge the Version Packages PR
 
-This triggers the `release-cli` GitHub Actions workflow.
+This is the release trigger. With no changesets left to consume, the same
+workflow:
 
-### 4. Watch the workflow
+1. Runs `go test ./...`.
+2. Tags the commit (`vX.Y.Z`, matching the version the PR just set) and pushes
+   the tag.
+3. Runs GoReleaser, which builds binaries for darwin/linux/windows ×
+   amd64/arm64, creates archives + `checksums.txt`, and creates a GitHub
+   Release named `vX.Y.Z`.
+4. Publishes `@subtextdev/subtext-cli` to npm via OIDC (no `NPM_TOKEN` needed).
 
-Go to **Actions → Release CLI** in the repo. It will:
+Watch it under **Actions → Release** in the repo.
 
-1. Run `go test ./...` to confirm tests pass.
-2. Run GoReleaser, which:
-   - Builds binaries for darwin/linux/windows × amd64/arm64.
-   - Creates tar.gz / zip archives and a `checksums.txt`.
-   - Creates a GitHub Release named `vX.Y.Z`.
-3. Publishes the npm package to `@subtextdev/subtext-cli` via OIDC (requires a Trusted Publisher configured on npmjs.com — no `NPM_TOKEN` secret needed).
-
-### 5. Smoke test
+### 4. Smoke test
 
 ```bash
 # via npm
@@ -71,5 +69,7 @@ No tag or GitHub credentials needed. Binaries land in `dist/`.
 ## First release checklist
 
 - [ ] Confirm `@subtextdev` npm scope exists on npmjs.com.
-- [ ] Configure a Trusted Publisher on npmjs.com: GitHub Actions, org `fullstorydev`, repo `subtext-cli`, workflow `release-cli.yml`, allow `npm publish`.
+- [ ] Configure a Trusted Publisher on npmjs.com: GitHub Actions, org
+      `fullstorydev`, repo `subtext-cli`, workflow `release.yml`, allow
+      `npm publish`.
 - [ ] Test `npx @subtextdev/subtext-cli auth whoami` after publish.

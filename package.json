@@ -1,0 +1,13 @@
+{
+  "name": "subtext-cli-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Workspace root for the changesets release tooling behind the npm/ wrapper package. Not published.",
+  "workspaces": [
+    "npm"
+  ],
+  "scripts": {
+    "changeset": "npx --yes @changesets/cli@^2.27.0",
+    "version-packages": "npx --yes @changesets/cli@^2.27.0 version"
+  }
+}
