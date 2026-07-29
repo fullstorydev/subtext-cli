@@ -2,21 +2,20 @@ name: Release
 
 # Two stages, one workflow, on every push to main:
 #
-#   1. Version: if there are pending .changeset/*.md files, changesets/action
-#      opens/updates a "Version Packages" PR that bumps npm/package.json and
-#      writes npm/CHANGELOG.md (see .changeset/README.md). Nothing is tagged or
+#   1. Version: while changesets are pending, changesets/action opens/updates
+#      a "Version Packages" PR that bumps npm/package.json and writes
+#      npm/CHANGELOG.md (see .changeset/README.md). Nothing is tagged or
 #      published yet.
 #
-#   2. Release: once that PR is merged (no changesets left to consume), this
-#      same job tags the release, runs goreleaser (cross-platform binaries +
-#      GitHub release), and publishes the npm wrapper — all in this run. We
-#      never depend on the tag push triggering a second workflow: a tag pushed
-#      by a workflow's own GITHUB_TOKEN would not start a new run, so the
-#      release logic lives here instead of behind a `push: tags` trigger. The
-#      release step no-ops if the current npm/package.json version is already
-#      tagged, so ordinary pushes to main (e.g. docs-only merges) are harmless.
+#   2. Release: once that PR merges (no changesets left), this job tags the
+#      release, runs goreleaser (cross-platform binaries + GitHub release),
+#      and publishes the npm wrapper, all in this run. A tag pushed by a
+#      workflow's own GITHUB_TOKEN doesn't trigger another workflow, so the
+#      release runs here instead of behind a `push: tags` trigger. It no-ops
+#      if npm/package.json's version is already tagged, so ordinary pushes to
+#      main (docs-only merges, etc.) are harmless.
 #
-# npm publish uses OIDC trusted publishing (provenance) — no NPM_TOKEN needed.
+# npm publish uses OIDC trusted publishing (provenance); no NPM_TOKEN needed.
 
 on:
   push:

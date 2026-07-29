@@ -2,7 +2,7 @@
   "name": "subtext-cli-monorepo",
   "version": "0.0.0",
   "private": true,
-  "description": "Workspace root — hosts the changesets release tooling for the npm/ wrapper package. Not published.",
+  "description": "Workspace root for the changesets release tooling behind the npm/ wrapper package. Not published.",
   "workspaces": [
     "npm"
   ],

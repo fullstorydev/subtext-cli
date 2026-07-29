@@ -7,7 +7,7 @@ There is no manual version bump and no manual `git tag`.
 
 - Write access to this repo (`fullstorydev/subtext-cli`).
 - (First release only) `@subtextdev` npm scope access and a Trusted Publisher
-  configured on npmjs.com (see below) — publishing uses OIDC provenance, no
+  configured on npmjs.com (see below). Publishing uses OIDC provenance; no
   `NPM_TOKEN` secret.
 
 ## Release process
