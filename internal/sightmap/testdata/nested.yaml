@@ -4,6 +4,7 @@ components:
     source: dialog
     memory:
       - overlay dialog container
+    tags: [defect]
     children:
       - name: ModalClose
         selector: .modal-close
