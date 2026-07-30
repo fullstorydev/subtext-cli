@@ -16,6 +16,12 @@ name: Release
 #      main (docs-only merges, etc.) are harmless.
 #
 # npm publish uses OIDC trusted publishing (provenance); no NPM_TOKEN needed.
+# Requires npm >= 11.5.1, so the CLI is upgraded before publish regardless of
+# what the Node image bundles.
+#
+# One-time npm setup: register a Trusted Publisher (GitHub Actions, repository
+# "fullstorydev/subtext-cli", workflow "release.yml") on the
+# @subtextdev/subtext-cli package at npmjs.com.
 
 on:
   push:
@@ -41,6 +47,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Version Packages PR
         id: changesets
@@ -86,6 +93,12 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Trusted publishing (OIDC) requires npm >= 11.5.1; ensure a new enough CLI
+      # regardless of what the Node image bundles.
+      - name: Update npm
+        if: steps.check.outputs.should_release == 'true'
+        run: npm install -g npm@latest
 
       - name: Publish npm package
         if: steps.check.outputs.should_release == 'true'
