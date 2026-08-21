@@ -13,7 +13,7 @@ import (
 // namespaceHelpFunc returns a cobra help function for a namespace command.
 // When credentials are available it fetches tools/list, filters by prefix,
 // and prints names + first-line descriptions inline. Falls back to the static
-// Long text + skill URL when no key is configured or the server is unreachable.
+// Long text when no key is configured or the server is unreachable.
 func namespaceHelpFunc(prefix string) func(*cobra.Command, []string) {
 	return func(cmd *cobra.Command, _ []string) {
 		desc := cmd.Long

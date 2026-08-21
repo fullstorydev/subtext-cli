@@ -33,10 +33,7 @@ var tunnelCmd = &cobra.Command{
 	Use:   "tunnel",
 	Short: "Manage reverse tunnels to local dev servers",
 	Long: `Connect a local development server to the Subtext relay so the hosted
-browser can reach it without exposing it to the public internet.
-
-For workflow guidance:
-  https://github.com/fullstorydev/subtext/tree/main/skills/tunnel`,
+browser can reach it without exposing it to the public internet.`,
 }
 
 var (

@@ -35,7 +35,7 @@ var rootCmd = &cobra.Command{
 	Short: "Subtext — drive the Subtext MCP API from the command line",
 	Long: `subtext is a CLI for the Subtext MCP API.
 
-Run 'subtext <command> --help' for command usage and skill references.`,
+Run 'subtext <command> --help' for command usage.`,
 	SilenceUsage:  true,
 	SilenceErrors: true,
 }
