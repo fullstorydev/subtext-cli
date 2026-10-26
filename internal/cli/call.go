@@ -211,6 +211,16 @@ func parseArgs(args []string, schema mcpclient.InputSchema, toolName string) (ma
 			return nil, fmt.Errorf("unknown flag --%s; run 'subtext %s --help' to see valid flags", key, strings.Replace(toolName, "-", " ", 1))
 		}
 
+		// An array flag may also be given whole, as a JSON array: --rule_ids '["a","b"]'.
+		if prop.Type == "array" && strings.HasPrefix(strings.TrimSpace(value), "[") {
+			var whole []any
+			if err := json.Unmarshal([]byte(value), &whole); err != nil {
+				return nil, fmt.Errorf("--%s: invalid JSON array: %w", key, err)
+			}
+			arrays[key] = append(arrays[key], whole...)
+			continue
+		}
+
 		coerced, err := coerce(value, prop)
 		if err != nil {
 			return nil, fmt.Errorf("--%s: %w", key, err)
@@ -274,6 +284,13 @@ func coerce(value string, prop mcpclient.PropertySchema) (any, error) {
 			return nil, fmt.Errorf("expected boolean, got %q", value)
 		}
 		return b, nil
+	case "object":
+		// Objects are passed as JSON: --resolution '{"network":"detail"}'.
+		var obj map[string]any
+		if err := json.Unmarshal([]byte(value), &obj); err != nil {
+			return nil, fmt.Errorf("expected a JSON object, got %q", value)
+		}
+		return obj, nil
 	default:
 		return value, nil
 	}

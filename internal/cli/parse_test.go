@@ -14,6 +14,7 @@ var testSchema = mcpclient.InputSchema{
 		"force":    {Type: "boolean", Description: "Force click"},
 		"ratio":    {Type: "number", Description: "Click pressure"},
 		"tags":     {Type: "array", Items: &mcpclient.PropertySchema{Type: "string"}, Description: "Labels"},
+		"lens":     {Type: "object", Description: "A nested object"},
 	},
 	Required: []string{"selector"},
 }
@@ -129,6 +130,31 @@ func TestParseArgs(t *testing.T) {
 				tags, ok := got["tags"].([]any)
 				if !ok || len(tags) != 2 || tags[0] != "ux" || tags[1] != "p1" {
 					t.Errorf("tags: got %v, want [ux p1]", got["tags"])
+				}
+			},
+		},
+		{
+			name: "object flag parsed as JSON",
+			args: []string{"--selector=btn", `--lens={"network":"detail","t":2}`},
+			check: func(t *testing.T, got map[string]any) {
+				lens, ok := got["lens"].(map[string]any)
+				if !ok || lens["network"] != "detail" || lens["t"] != float64(2) {
+					t.Errorf("lens: got %v (%T), want map[network:detail t:2]", got["lens"], got["lens"])
+				}
+			},
+		},
+		{
+			name:    "object flag with invalid JSON",
+			args:    []string{"--selector=btn", "--lens=network:detail"},
+			wantErr: true,
+		},
+		{
+			name: "array flag given as a JSON array",
+			args: []string{"--selector=btn", `--tags=["ux","p1"]`, "--tags=p2"},
+			check: func(t *testing.T, got map[string]any) {
+				tags, ok := got["tags"].([]any)
+				if !ok || len(tags) != 3 || tags[0] != "ux" || tags[1] != "p1" || tags[2] != "p2" {
+					t.Errorf("tags: got %v, want [ux p1 p2]", got["tags"])
 				}
 			},
 		},
