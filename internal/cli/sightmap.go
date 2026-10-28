@@ -12,13 +12,23 @@ import (
 
 var sightmapCmd = &cobra.Command{
 	Use:   "sightmap",
-	Short: "Upload .sightmap/ component definitions",
-	Long: `Upload .sightmap/ definitions to a live Subtext session so the hosted
-browser can resolve component names to CSS selectors.
+	Short: "Upload a .sightmap/ corpus",
+	Long: `Upload a .sightmap/ corpus to a live connection or a session review so
+snapshots and signals come back with semantic component names, view names,
+request names, and extracted properties.
 
-The upload URL is returned by 'subtext live tunnel':
+The whole corpus is sent (components with their properties, views with routes,
+requests, messages, memory), the same wire as 'sightmap export --url'.
+
+Upload URLs are single-use and expire quickly; upload right after you get one.
+
+Live connection ('subtext live tunnel', or the sightmap_upload_url line from
+'subtext live connect'):
   URL=$(subtext live tunnel --format json | jq -r .data.sightmapUploadUrl)
-  subtext sightmap upload --url "$URL"`,
+  subtext sightmap upload --url "$URL"
+
+Session review (the sightmap_upload_url line in 'subtext review open' output):
+  subtext sightmap upload --url "<sightmap_upload_url>"`,
 }
 
 var sightmapUploadFlags struct {
@@ -28,13 +38,13 @@ var sightmapUploadFlags struct {
 
 var sightmapUploadCmd = &cobra.Command{
 	Use:   "upload",
-	Short: "Upload .sightmap/ definitions to a live session",
+	Short: "Upload a .sightmap/ corpus to a live connection or session review",
 	RunE:  runSightmapUpload,
 }
 
 func init() {
 	f := sightmapUploadCmd.Flags()
-	f.StringVar(&sightmapUploadFlags.url, "url", "", "Sightmap upload URL (from: subtext live tunnel --format json | jq -r .data.sightmapUploadUrl)")
+	f.StringVar(&sightmapUploadFlags.url, "url", "", "Single-use sightmap upload URL (from live tunnel, live connect, or review open)")
 	f.StringVar(&sightmapUploadFlags.root, "root", "", "Directory containing .sightmap/ (auto-detected if omitted)")
 	_ = sightmapUploadCmd.MarkFlagRequired("url")
 
@@ -54,11 +64,11 @@ func runSightmapUpload(cmd *cobra.Command, _ []string) error {
 		}
 	}
 
-	payload, err := sightmap.Collect(root)
+	corpus, err := sightmap.Collect(root)
 	if err != nil {
 		return err
 	}
-	if len(payload.Sightmap) == 0 && len(payload.Memory) == 0 {
+	if sightmap.IsEmpty(corpus) {
 		if globalFlags.format == "json" {
 			return json.NewEncoder(os.Stdout).Encode(map[string]any{"ok": true, "components": 0, "message": "No sightmap definitions found"})
 		}
@@ -66,7 +76,7 @@ func runSightmapUpload(cmd *cobra.Command, _ []string) error {
 		return nil
 	}
 
-	n, err := sightmap.Upload(cmd.Context(), sightmapUploadFlags.url, payload)
+	n, err := sightmap.Upload(cmd.Context(), sightmapUploadFlags.url, corpus)
 	if err != nil {
 		return err
 	}

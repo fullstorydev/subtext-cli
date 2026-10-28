@@ -1,0 +1,23 @@
+components:
+  - name: TripBar
+    selector: .trip-bar
+    properties:
+      - { name: city, extract: { from: component, path: TripCity.text } }
+      - { name: start, extract: { from: dom.attr, path: data-start } }
+    children:
+      - name: TripCity
+        selector: .trip-bar-city
+        properties:
+          - { name: text, extract: { from: dom.text } }
+
+views:
+  - name: PlanTrip
+    route: /plan/:id
+    components:
+      - name: PlanView
+        selector: .plan-view
+
+requests:
+  - name: UpdateTrip
+    route: /api/trips/:id
+    method: PATCH

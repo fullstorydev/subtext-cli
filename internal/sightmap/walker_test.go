@@ -1,9 +1,12 @@
 package sightmap
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
+
+	sm "github.com/sightmap/sightmap/go/sightmap"
 
 	"github.com/fullstorydev/subtext-cli/internal/fstesting"
 )
@@ -15,7 +18,7 @@ func TestCollect_Components(t *testing.T) {
 	p, err := Collect(testdataRoot(t))
 	fstesting.Ok(t, err, "Collect")
 
-	byName := indexByName(p.Sightmap)
+	byName := indexByName(p.AllComponents())
 
 	hdr, ok := byName["Header"]
 	fstesting.Assert(t, ok, "missing Header component")
@@ -50,7 +53,7 @@ func TestCollect_Nested(t *testing.T) {
 	p, err := Collect(dir)
 	fstesting.Ok(t, err, "Collect")
 
-	byName := indexByName(p.Sightmap)
+	byName := indexByName(p.AllComponents())
 
 	modal, ok := byName["Modal"]
 	fstesting.Assert(t, ok, "missing Modal")
@@ -78,20 +81,62 @@ func TestCollect_Views(t *testing.T) {
 	p, err := Collect(dir)
 	fstesting.Ok(t, err, "Collect")
 
-	byName := indexByName(p.Sightmap)
+	byName := indexByName(p.AllComponents())
 	_, hasCard := byName["DashboardCard"]
 	fstesting.Assert(t, hasCard, "missing DashboardCard")
 	_, hasHeader := byName["DashboardHeader"]
 	fstesting.Assert(t, hasHeader, "missing DashboardHeader")
 }
 
-// TestCollect_NoSightmapDir returns an empty payload (not an error) when no
+// TestCollect_StructuredWire verifies the upload body is the structured Corpus wire
+// (globals/views/requests), not the legacy flat `sightmap` list, and that it keeps what
+// the flat list dropped: view routes, requests, and component properties, including
+// object-form extract: (testdata/structured.yaml).
+func TestCollect_StructuredWire(t *testing.T) {
+	c, err := Collect(writeSightmap(t, "structured.yaml"))
+	fstesting.Ok(t, err, "Collect")
+
+	body, err := json.Marshal(c)
+	fstesting.Ok(t, err, "marshal")
+
+	var wire struct {
+		Sightmap json.RawMessage   `json:"sightmap"`
+		Globals  []sm.ComponentDef `json:"globals"`
+		Views    []sm.ViewDef      `json:"views"`
+		Requests []sm.RequestDef   `json:"requests"`
+	}
+	fstesting.Ok(t, json.Unmarshal(body, &wire), "unmarshal wire")
+
+	fstesting.Assert(t, wire.Sightmap == nil, "legacy flat `sightmap` key must not be sent")
+
+	fstesting.Equals(t, 1, len(wire.Views), "views")
+	fstesting.Equals(t, "PlanTrip", wire.Views[0].Name, "view name")
+	fstesting.Equals(t, "/plan/:id", wire.Views[0].Route, "view route")
+
+	fstesting.Equals(t, 1, len(wire.Requests), "requests")
+	fstesting.Equals(t, "UpdateTrip", wire.Requests[0].Name, "request name")
+	fstesting.Equals(t, "PATCH", wire.Requests[0].Method, "request method")
+
+	byName := indexByName(wire.Globals)
+	bar, ok := byName["TripBar"]
+	fstesting.Assert(t, ok, "missing TripBar")
+	fstesting.Equals(t, []sm.ComponentPropertyDef{
+		{Name: "city", Extract: sm.Extract{From: "component", Path: "TripCity.text"}},
+		{Name: "start", Extract: sm.Extract{From: "dom.attr", Path: "data-start"}},
+	}, bar.Properties, "TripBar properties")
+
+	city, ok := byName["TripCity"]
+	fstesting.Assert(t, ok, "missing TripCity")
+	fstesting.Equals(t, []string{".trip-bar .trip-bar-city"}, city.Selectors, "TripCity selectors")
+	fstesting.Equals(t, []string{"TripBar"}, city.ParentChain, "TripCity parent chain")
+}
+
+// TestCollect_NoSightmapDir returns an empty corpus (not an error) when no
 // .sightmap/ directory exists.
 func TestCollect_NoSightmapDir(t *testing.T) {
-	p, err := Collect(t.TempDir())
+	c, err := Collect(t.TempDir())
 	fstesting.Ok(t, err, "Collect")
-	fstesting.Equals(t, 0, len(p.Sightmap), "no components expected")
-	fstesting.Equals(t, 0, len(p.Memory), "no memory expected")
+	fstesting.Assert(t, IsEmpty(c), "empty corpus expected")
 }
 
 func TestFindRoot(t *testing.T) {
@@ -161,8 +206,8 @@ func writeSightmap(t *testing.T, name string) string {
 	return dir
 }
 
-func indexByName(comps []Component) map[string]Component {
-	m := make(map[string]Component, len(comps))
+func indexByName(comps []sm.ComponentDef) map[string]sm.ComponentDef {
+	m := make(map[string]sm.ComponentDef, len(comps))
 	for _, c := range comps {
 		m[c.Name] = c
 	}

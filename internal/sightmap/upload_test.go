@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	sm "github.com/sightmap/sightmap/go/sightmap"
+
 	"github.com/fullstorydev/subtext-cli/internal/fstesting"
 )
 
@@ -16,19 +18,25 @@ func TestUpload_OK(t *testing.T) {
 		fstesting.Equals(t, http.MethodPost, r.Method, "HTTP method")
 		fstesting.Equals(t, "application/json", r.Header.Get("Content-Type"), "Content-Type header")
 
-		var body Payload
+		var body sm.Corpus
 		fstesting.Ok(t, json.NewDecoder(r.Body).Decode(&body), "decode request body")
+		fstesting.Equals(t, []string{"hint"}, body.Memory, "memory")
+		fstesting.Equals(t, "/home", body.Views[0].Route, "view route")
 
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{"status": "ok", "components": len(body.Sightmap)})
+		_ = json.NewEncoder(w).Encode(map[string]any{"status": "ok", "components": len(body.AllComponents())})
 	}))
 	t.Cleanup(srv.Close)
 
-	p := Payload{
-		Sightmap: []Component{{Name: "Btn", Selectors: []string{".btn"}}},
-		Memory:   []string{"hint"},
+	c := &sm.Corpus{
+		Memory: []string{"hint"},
+		Views: []sm.ViewDef{{
+			Name:       "Home",
+			Route:      "/home",
+			Components: []sm.ComponentDef{{Name: "Btn", Selectors: []string{".btn"}}},
+		}},
 	}
-	n, err := Upload(context.Background(), srv.URL, p)
+	n, err := Upload(context.Background(), srv.URL, c)
 	fstesting.Ok(t, err, "Upload")
 	fstesting.Equals(t, 1, n, "acknowledged component count")
 }
@@ -43,7 +51,7 @@ func TestUpload_NoAuthHeader(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	_, err := Upload(context.Background(), srv.URL, Payload{})
+	_, err := Upload(context.Background(), srv.URL, &sm.Corpus{})
 	fstesting.Ok(t, err, "Upload")
 }
 
@@ -53,7 +61,7 @@ func TestUpload_ExpiredNonce(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	_, err := Upload(context.Background(), srv.URL, Payload{})
+	_, err := Upload(context.Background(), srv.URL, &sm.Corpus{})
 	fstesting.Assert(t, err != nil, "expected error for 401")
 	fstesting.Assert(t, strings.Contains(err.Error(), "invalid or expired nonce"), "error should include server body: %v", err)
 }
@@ -64,7 +72,7 @@ func TestUpload_BodyTooLarge(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	_, err := Upload(context.Background(), srv.URL, Payload{})
+	_, err := Upload(context.Background(), srv.URL, &sm.Corpus{})
 	fstesting.Assert(t, err != nil, "expected error for 413")
 	fstesting.Assert(t, strings.Contains(err.Error(), "413"), "error should include status code: %v", err)
 }
