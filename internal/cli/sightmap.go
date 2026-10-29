@@ -16,9 +16,15 @@ var sightmapCmd = &cobra.Command{
 	Long: `Upload .sightmap/ definitions to a live Subtext session so the hosted
 browser can resolve component names to CSS selectors.
 
-The upload URL is returned by 'subtext live tunnel':
+The whole corpus is sent (views with routes, nested components and their
+properties, requests, messages, memory), the same JSON 'sightmap export' writes.
+
+The upload URL is single-use and short-lived. It is returned by
+'subtext live tunnel' for a live session:
   URL=$(subtext live tunnel --format json | jq -r .data.sightmapUploadUrl)
-  subtext sightmap upload --url "$URL"`,
+  subtext sightmap upload --url "$URL"
+and by 'subtext review open' (the sightmap_upload_url line) for a recorded
+session. Upload right after opening, then snapshot or zoom.`,
 }
 
 var sightmapUploadFlags struct {
@@ -34,7 +40,7 @@ var sightmapUploadCmd = &cobra.Command{
 
 func init() {
 	f := sightmapUploadCmd.Flags()
-	f.StringVar(&sightmapUploadFlags.url, "url", "", "Sightmap upload URL (from: subtext live tunnel --format json | jq -r .data.sightmapUploadUrl)")
+	f.StringVar(&sightmapUploadFlags.url, "url", "", "Sightmap upload URL (from 'subtext live tunnel' sightmapUploadUrl, or 'subtext review open' sightmap_upload_url)")
 	f.StringVar(&sightmapUploadFlags.root, "root", "", "Directory containing .sightmap/ (auto-detected if omitted)")
 	_ = sightmapUploadCmd.MarkFlagRequired("url")
 
@@ -54,11 +60,11 @@ func runSightmapUpload(cmd *cobra.Command, _ []string) error {
 		}
 	}
 
-	payload, err := sightmap.Collect(root)
+	corpus, err := sightmap.Collect(root)
 	if err != nil {
 		return err
 	}
-	if len(payload.Sightmap) == 0 && len(payload.Memory) == 0 {
+	if sightmap.IsEmpty(corpus) {
 		if globalFlags.format == "json" {
 			return json.NewEncoder(os.Stdout).Encode(map[string]any{"ok": true, "components": 0, "message": "No sightmap definitions found"})
 		}
@@ -66,7 +72,7 @@ func runSightmapUpload(cmd *cobra.Command, _ []string) error {
 		return nil
 	}
 
-	n, err := sightmap.Upload(cmd.Context(), sightmapUploadFlags.url, payload)
+	n, err := sightmap.Upload(cmd.Context(), sightmapUploadFlags.url, corpus)
 	if err != nil {
 		return err
 	}

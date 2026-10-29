@@ -8,50 +8,33 @@ import (
 	sm "github.com/sightmap/sightmap/go/sightmap"
 )
 
-// Component is a single named element with fully-resolved CSS selectors, the wire shape
-// this package's Collect builds and Upload sends.
-type Component struct {
-	Name      string   `json:"name"`
-	Selectors []string `json:"selectors"`
-	Source    string   `json:"source"`
-	Memory    []string `json:"memory"`
-	Tags      []string `json:"tags,omitempty"`
-}
-
-// Payload is the JSON body sent to the sightmap upload endpoint.
-type Payload struct {
-	Sightmap []Component `json:"sightmap"`
-	Memory   []string    `json:"memory"`
-}
-
-// Collect loads root/.sightmap/ via the shared sightmap library and returns the flat
-// upload payload: every component in the corpus (github.com/sightmap/sightmap/go/sightmap's
-// Corpus.AllComponents — globals plus every view's, deduped by name) projected onto the
-// wire shape, plus the corpus's file-level memory. Returns an empty payload (not an error)
-// when no .sightmap/ directory exists — sightmap.Load has no such tolerance (it walks the
-// directory and errors if it's missing), so that contract is preserved here explicitly.
-func Collect(root string) (Payload, error) {
+// Collect loads root/.sightmap/ via the shared sightmap library and returns the corpus
+// to upload. Upload sends it as the library's canonical wire (json.Marshal of
+// sightmap.Corpus: globals, views with their routes and view-scoped components,
+// requests, messages, signals, environments and memory), the same bytes `sightmap
+// export` produces, so component properties, nesting and URL-aware view scoping
+// reach the server intact. (This used to send a flat name/selectors/source/memory/tags
+// list, which dropped all of that.)
+//
+// Returns nil (not an error) when no .sightmap/ directory exists — sightmap.Load has no
+// such tolerance (it walks the directory and errors if it's missing), so that contract
+// is preserved here explicitly.
+func Collect(root string) (*sm.Corpus, error) {
 	sdir := filepath.Join(root, ".sightmap")
 	if _, err := os.Stat(sdir); os.IsNotExist(err) {
-		return Payload{}, nil
+		return nil, nil
 	}
 
 	corpus, err := sm.Load(sdir)
 	if err != nil {
-		return Payload{}, fmt.Errorf("sightmap: load %s: %w", sdir, err)
+		return nil, fmt.Errorf("sightmap: load %s: %w", sdir, err)
 	}
+	return corpus, nil
+}
 
-	p := Payload{Memory: corpus.Memory}
-	for _, c := range corpus.AllComponents() {
-		p.Sightmap = append(p.Sightmap, Component{
-			Name:      c.Name,
-			Selectors: c.Selectors,
-			Source:    c.Source,
-			Memory:    c.Memory,
-			Tags:      c.Tags,
-		})
-	}
-	return p, nil
+// IsEmpty reports whether a collected corpus has nothing to upload.
+func IsEmpty(c *sm.Corpus) bool {
+	return c == nil || (len(c.AllComponents()) == 0 && len(c.Memory) == 0 && len(c.Requests) == 0 && len(c.Messages) == 0)
 }
 
 // FindRoot resolves the sightmap root directory using this precedence:

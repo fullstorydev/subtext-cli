@@ -1,8 +1,12 @@
 views:
-  - components:
+  - name: Dashboard
+    route: /dashboard
+    components:
       - name: DashboardCard
         selector: .dashboard-card
         source: dashboard
+        properties:
+          - { name: title, extract: { from: dom.attr, path: data-title } }
       - name: DashboardHeader
         selector: .dashboard-header
         source: dashboard
