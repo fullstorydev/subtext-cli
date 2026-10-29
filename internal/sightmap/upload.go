@@ -10,13 +10,19 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+
+	sm "github.com/sightmap/sightmap/go/sightmap"
 )
 
-// Upload POSTs payload to the sightmap upload URL (which carries a single-use
-// nonce in its token query param). Returns the component count the server
-// acknowledged, or an error that includes the server's response body.
-func Upload(ctx context.Context, uploadURL string, p Payload) (int, error) {
-	body, err := json.Marshal(p)
+// Upload POSTs the corpus, as the library's canonical JSON wire, to the sightmap
+// upload URL (which carries a single-use nonce in its token query param). Returns
+// the component count the server acknowledged, or an error that includes the
+// server's response body.
+func Upload(ctx context.Context, uploadURL string, corpus *sm.Corpus) (int, error) {
+	if corpus == nil {
+		corpus = &sm.Corpus{}
+	}
+	body, err := json.Marshal(corpus)
 	if err != nil {
 		return 0, fmt.Errorf("sightmap: marshal: %w", err)
 	}

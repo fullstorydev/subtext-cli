@@ -280,7 +280,7 @@ subtext sightmap upload --url <nonce-url> --format json
 # {"ok":true,"components":12}
 ```
 
-Without `--root`, the project root is auto-detected from the current directory. The upload URL comes from `live tunnel` (JSON field `sightmapUploadUrl`) or `live connect` (text line `sightmap_upload_url:`).
+Without `--root`, the project root is auto-detected from the current directory. The whole corpus is sent (views with routes, nested components and their `properties:`, requests, messages, memory), the same JSON `sightmap export` writes. The upload URL is single-use and short-lived; it comes from `live tunnel` (JSON field `sightmapUploadUrl`), `live connect` (text line `sightmap_upload_url:`), or `review open` (text line `sightmap_upload_url:`) for a recorded session. Upload right after opening, then snapshot or zoom.
 
 ### `artifact`
 

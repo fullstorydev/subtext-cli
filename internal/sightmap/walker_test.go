@@ -1,9 +1,12 @@
 package sightmap
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
+
+	sm "github.com/sightmap/sightmap/go/sightmap"
 
 	"github.com/fullstorydev/subtext-cli/internal/fstesting"
 )
@@ -15,7 +18,7 @@ func TestCollect_Components(t *testing.T) {
 	p, err := Collect(testdataRoot(t))
 	fstesting.Ok(t, err, "Collect")
 
-	byName := indexByName(p.Sightmap)
+	byName := indexByName(p.AllComponents())
 
 	hdr, ok := byName["Header"]
 	fstesting.Assert(t, ok, "missing Header component")
@@ -50,7 +53,7 @@ func TestCollect_Nested(t *testing.T) {
 	p, err := Collect(dir)
 	fstesting.Ok(t, err, "Collect")
 
-	byName := indexByName(p.Sightmap)
+	byName := indexByName(p.AllComponents())
 
 	modal, ok := byName["Modal"]
 	fstesting.Assert(t, ok, "missing Modal")
@@ -78,20 +81,41 @@ func TestCollect_Views(t *testing.T) {
 	p, err := Collect(dir)
 	fstesting.Ok(t, err, "Collect")
 
-	byName := indexByName(p.Sightmap)
+	byName := indexByName(p.AllComponents())
 	_, hasCard := byName["DashboardCard"]
 	fstesting.Assert(t, hasCard, "missing DashboardCard")
 	_, hasHeader := byName["DashboardHeader"]
 	fstesting.Assert(t, hasHeader, "missing DashboardHeader")
 }
 
-// TestCollect_NoSightmapDir returns an empty payload (not an error) when no
+// TestCollect_WireKeepsViewsAndProperties is the point of sending the corpus: the
+// upload body carries the view (name, route, its own components) and component
+// properties, which the old flat list dropped.
+func TestCollect_WireKeepsViewsAndProperties(t *testing.T) {
+	p, err := Collect(writeSightmap(t, "views.yaml"))
+	fstesting.Ok(t, err, "Collect")
+
+	blob, err := json.Marshal(p)
+	fstesting.Ok(t, err, "marshal")
+	var wire sm.Corpus
+	fstesting.Ok(t, json.Unmarshal(blob, &wire), "unmarshal wire")
+
+	fstesting.Equals(t, 1, len(wire.Views), "views on the wire")
+	v := wire.Views[0]
+	fstesting.Equals(t, "Dashboard", v.Name, "view name")
+	fstesting.Equals(t, "/dashboard", v.Route, "view route")
+	card := indexByName(v.Components)["DashboardCard"]
+	fstesting.Equals(t, 1, len(card.Properties), "DashboardCard properties")
+	fstesting.Equals(t, "title", card.Properties[0].Name, "property name")
+	fstesting.Equals(t, "data-title", card.Properties[0].Extract.Path, "property extract path")
+}
+
+// TestCollect_NoSightmapDir returns nothing to upload (not an error) when no
 // .sightmap/ directory exists.
 func TestCollect_NoSightmapDir(t *testing.T) {
 	p, err := Collect(t.TempDir())
 	fstesting.Ok(t, err, "Collect")
-	fstesting.Equals(t, 0, len(p.Sightmap), "no components expected")
-	fstesting.Equals(t, 0, len(p.Memory), "no memory expected")
+	fstesting.Assert(t, IsEmpty(p), "nothing to upload expected")
 }
 
 func TestFindRoot(t *testing.T) {
@@ -161,8 +185,8 @@ func writeSightmap(t *testing.T, name string) string {
 	return dir
 }
 
-func indexByName(comps []Component) map[string]Component {
-	m := make(map[string]Component, len(comps))
+func indexByName(comps []sm.ComponentDef) map[string]sm.ComponentDef {
+	m := make(map[string]sm.ComponentDef, len(comps))
 	for _, c := range comps {
 		m[c.Name] = c
 	}
