@@ -1,5 +1,19 @@
 # @subtextdev/subtext-cli
 
+## 1.3.0
+
+### Minor Changes
+
+- 750f663: `sightmap upload` now sends the whole `.sightmap/` corpus — views with their routes, nested components and their `properties:`, requests, messages and memory — as the canonical JSON wire `sightmap export` writes, instead of a flat name/selectors list. Session review uses it to scope components by view and to put component properties on interaction signals (e.g. `[FlightCard flight="TP 799" price="398"]`); the flat list dropped all of that. The help and README now also name `review open`'s `sightmap_upload_url` as an upload target.
+
+  Also bumps the bundled `github.com/sightmap/sightmap/go` library from v0.26.0 to v0.36.1, which v0.26.0 needed to load corpora using object-form `extract:` (it failed with "cannot unmarshal !!map into string").
+
+### Patch Changes
+
+- ca3c3f5: Update the bundled `github.com/sightmap/sightmap/go` library from v0.17.0 to v0.26.0. `sightmap upload` now parses `.sightmap/` corpora with the current loader and matcher — `$ref` expansion, view-scoped components, requests/messages/properties, and the newer route-matching semantics. No change to the CLI's own surface or flags.
+
+  Also remove dead "For workflow guidance" skill links from `subtext tunnel --help` and the root help text — the referenced skill pages don't exist. The live tool listing shown in each namespace's `--help` remains the guidance.
+
 ## 1.2.0
 
 ### Minor Changes
